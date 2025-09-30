@@ -1,10 +1,15 @@
 import argparse
+import shutil
 import sqlite3
+from pathlib import Path
+
+from uuid_extensions import uuid7str
 
 
 class JavguruDatabase:
     def __init__(self, db_path="database.db"):
         self.db_path = db_path
+        self._make_db_backup()
         self._init_db()
 
     def _init_db(self):
@@ -31,18 +36,21 @@ class JavguruDatabase:
                 END
             """)
 
+    def _make_db_backup(self):
+        db_path = Path(self.db_path)
+        new_db_filename = f"{db_path.stem}.{uuid7str()}{db_path.suffix}"
+        new_db_path = db_path.parent / new_db_filename
+        shutil.copy2(db_path, new_db_path)
+
     def insert_row(self, id, description):
         """Insert new row with id and description. If id exists, do nothing and print warning."""
 
         with sqlite3.connect(self.db_path) as conn:
-            try:
-                conn.execute(
-                    "INSERT INTO items (id, description) VALUES (?, ?)",
-                    (id, description),
-                )
-                conn.commit()
-            except sqlite3.IntegrityError:
-                print(f"Warning: ID '{id}' already exists. No action taken.")
+            conn.execute(
+                "INSERT INTO items (id, description) VALUES (?, ?)",
+                (id, description),
+            )
+            conn.commit()
 
     def update_rating(self, id, rating):
         """Update rating for a specific ID"""
