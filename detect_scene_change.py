@@ -1,7 +1,7 @@
+import argparse
 import json
 import re
 import subprocess
-import sys
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -15,7 +15,7 @@ class DetectedSegment:
 def detect_scene_changes_sync(
     file_path: str,
     stream_id: Optional[int] = None,
-    min_change: float = 0.3,
+    min_change: float = 0.4,
     on_progress: Optional[Callable[[float], None]] = None,
     on_segment_detected: Optional[Callable[[DetectedSegment], None]] = None,
     from_time: float = 0,
@@ -107,8 +107,36 @@ def make_llc_file_name(mp4_path: Path) -> str:
     return f"{mp4_path.stem}-proj.llc"
 
 
-# Example synchronous usage
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Detect scene changes in MP4 files and generate LLC files"
+    )
+    parser.add_argument(
+        "files_dir", type=str, help="Directory containing MP4 files to process"
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=str,
+        default=None,
+        help="Output directory for LLC files (defaults to files_dir)",
+    )
+    parser.add_argument(
+        "--min-change",
+        type=float,
+        default=0.4,
+        help="Minimum change threshold for scene detection (default: 0.4)",
+    )
+
+    args = parser.parse_args()
+
+    files_dir = Path(args.files_dir)
+    files_dir.mkdir(parents=True, exist_ok=True)
+
+    # Use files_dir if out_dir is not provided
+    llc_out_dir = Path(args.out_dir if args.out_dir is not None else args.files_dir)
+    llc_out_dir.mkdir(parents=True, exist_ok=True)
+
+    min_change = args.min_change
 
     def progress_callback(progress: float):
         print(f"Progress: {progress:.1%}")
@@ -116,17 +144,12 @@ if __name__ == "__main__":
     def segment_callback(segment: DetectedSegment):
         print(f"Scene change: {segment.start:.2f}s - {segment.end:.2f}s")
 
-    files_dir = Path(sys.argv[1])
-    files_dir.mkdir(parents=True, exist_ok=True)
-
-    llc_out_dir = Path(sys.argv[1] if not len(sys.argv) == 3 else sys.argv[2])
-    llc_out_dir.mkdir(parents=True, exist_ok=True)
-
     for file_path in files_dir.rglob("*"):
         if file_path.is_file() and file_path.suffix == ".mp4":
+            print(f"Processing: {file_path}")
             segments = detect_scene_changes_sync(
                 file_path=str(file_path),
-                min_change=0.3,
+                min_change=min_change,
                 on_segment_detected=segment_callback,
             )
             print(f"Detected {len(segments)} segments")
@@ -134,3 +157,4 @@ if __name__ == "__main__":
 
             llc_path = llc_out_dir / make_llc_file_name(file_path)
             llc_path.write_text(json.dumps(llc))
+            print(f"Saved LLC file: {llc_path}")
