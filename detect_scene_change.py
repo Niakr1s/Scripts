@@ -119,7 +119,7 @@ if __name__ == "__main__":
     files_dir = Path(sys.argv[1])
     files_dir.mkdir(parents=True, exist_ok=True)
 
-    llc_out_dir = Path("out/llc")
+    llc_out_dir = Path("out/llc" if not len(sys.argv) == 3 else sys.argv[2])
     llc_out_dir.mkdir(parents=True, exist_ok=True)
 
     for file_path in files_dir.rglob("*"):
