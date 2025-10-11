@@ -151,13 +151,10 @@ def main():
         description="Detect scene changes in MP4 files and generate LLC files"
     )
     parser.add_argument(
-        "files_dir", type=str, help="Directory containing MP4 files to process"
-    )
-    parser.add_argument(
-        "--out-dir",
+        "files",
+        nargs="+",
         type=str,
-        default=None,
-        help="Output directory for LLC files (defaults to files_dir)",
+        help="A single MP4 file to process or a directory containing them",
     )
     parser.add_argument(
         "--min-change",
@@ -168,12 +165,15 @@ def main():
 
     args = parser.parse_args()
 
-    files_dir = Path(args.files_dir)
-    files_dir.mkdir(parents=True, exist_ok=True)
-
-    # Use files_dir if out_dir is not provided
-    llc_out_dir = Path(args.out_dir if args.out_dir is not None else args.files_dir)
-    llc_out_dir.mkdir(parents=True, exist_ok=True)
+    files: set[Path] = set()
+    for input_path in args.files:
+        input_path = Path(input_path)
+        if input_path.is_dir():
+            for file_path in input_path.rglob("*"):
+                if file_path.is_file() and file_path.suffix == ".mp4":
+                    files.add(file_path)
+        elif input_path.is_file():
+            files.add(input_path)
 
     min_change = args.min_change
 
@@ -183,20 +183,20 @@ def main():
     def segment_callback(segment: DetectedSegment):
         print(f"Scene change: {segment.start:.2f}s - {segment.end:.2f}s")
 
-    for file_path in files_dir.rglob("*"):
-        if file_path.is_file() and file_path.suffix == ".mp4":
-            print(f"Processing: {file_path}")
-            segments = detect_scene_changes_sync(
-                file_path=str(file_path),
-                min_change=min_change,
-                on_segment_detected=segment_callback,
-            )
-            print(f"Detected {len(segments)} segments")
-            llc = export_to_llc(segments, file_path.name)
+    for file_path in files:
+        llc_path = file_path.parent / make_llc_file_name(file_path)
 
-            llc_path = llc_out_dir / make_llc_file_name(file_path)
-            llc_path.write_text(json.dumps(llc, indent=2))
-            print(f"Saved LLC file: {llc_path}\n")
+        print(f"Processing: {file_path}")
+        segments = detect_scene_changes_sync(
+            file_path=str(file_path),
+            min_change=min_change,
+            on_segment_detected=segment_callback,
+        )
+        print(f"Detected {len(segments)} segments")
+
+        llc = export_to_llc(segments, file_path.name)
+        llc_path.write_text(json.dumps(llc, indent=2))
+        print(f"Saved LLC file: {llc_path}\n")
 
 
 if __name__ == "__main__":
