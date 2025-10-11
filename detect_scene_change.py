@@ -143,7 +143,7 @@ def export_to_llc(segments: list[DetectedSegment], file_name: str):
 
 
 def make_llc_file_name(mp4_path: Path) -> str:
-    return f"{mp4_path.stem}-proj.llc"
+    return f"{mp4_path.stem}.llc"
 
 
 def main():
