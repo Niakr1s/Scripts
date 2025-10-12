@@ -165,15 +165,15 @@ def main():
 
     args = parser.parse_args()
 
-    files: set[Path] = set()
+    files: list[Path] = []
     for input_path in args.files:
         input_path = Path(input_path)
         if input_path.is_dir():
             for file_path in input_path.rglob("*"):
                 if file_path.is_file() and file_path.suffix == ".mp4":
-                    files.add(file_path)
+                    files.append(file_path)
         elif input_path.is_file():
-            files.add(input_path)
+            files.append(input_path)
 
     min_change = args.min_change
 
