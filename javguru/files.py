@@ -1,6 +1,6 @@
 import re
 
-RE = re.compile(r"^\[(\w+-\w+)\]\W*(.*?)\W*(\.mp4)?$")
+RE = re.compile(r"^\[(.+)\]\W*(.*?)\W*(\.mp4)?$")
 
 
 def extract_id_and_description(filename: str) -> tuple[str, str]:
