@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "requests>=2.32.5",
+    "send2trash>=2.1.0",
     "unidecode>=1.4.0",
     "uuid7>=0.1.0",
 ]
